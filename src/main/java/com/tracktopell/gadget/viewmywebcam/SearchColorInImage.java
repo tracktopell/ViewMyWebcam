@@ -3,6 +3,7 @@ package com.tracktopell.gadget.viewmywebcam;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.FileInputStream;
@@ -17,7 +18,7 @@ import javax.imageio.ImageIO;
  */
 public class SearchColorInImage {
 	
-	public static void main(String[] args) {
+	public static void main1(String[] args) {
 		BufferedImage source  = null;
 		BufferedImage scalled = null;
 		BufferedImage workingImage = null;
@@ -78,6 +79,38 @@ public class SearchColorInImage {
 		}
 
 	}
+	
+	public static void main(String[] args) {
+		BufferedImage img1  = null;
+		BufferedImage img2  = null;
+		BufferedImage imgM  = null;
+		final String f1 = args[0];
+		final String f2 = args[1];
+		final String f3 = args[2];
+		String fileFormat=null;
+		try {
+			
+			img1 = ImageIO.read(new FileInputStream(f1));
+			
+			img2 = ImageIO.read(new FileInputStream(f2));
+			
+			imgM = compareImages(img1, img2);
+			if(imgM != null){
+				if(f1.toLowerCase().endsWith("png")){
+					fileFormat = "png";
+				} else if(f1.toLowerCase().endsWith("jpg") || f1.toLowerCase().endsWith("jpeg")){
+					fileFormat = "jpg";
+				}
+
+				ImageIO.write(imgM, fileFormat, new FileOutputStream(f3));
+			}
+		} catch (Exception e) {
+			e.printStackTrace(System.err);
+			System.exit(1);
+		}
+
+	}
+	
 	
 	private static final boolean DEBUG = false;
 	
@@ -272,6 +305,144 @@ public class SearchColorInImage {
 		}
 	}
 	
+	public static BufferedImage compareImages(BufferedImage image1, BufferedImage image2){
+		
+		if(		image1.getWidth()	!=	image2.getWidth() || 
+				image2.getHeight()	!=	image2.getHeight()    ){
+			throw new IllegalStateException("Diferent size's images");
+		}
+		
+		BufferedImage scalled1    = null;
+		BufferedImage scalled2    = null;
+		BufferedImage resultImage = null;
+		
+		int scale  = 10; // 10%
+		int scaledW =0;
+		int scaledH =0;
+		
+		boolean hasDetected = false;
+		
+			
+		scaledW = (image1.getWidth()  * scale)/100;
+		scaledH = (image1.getHeight() * scale)/100;
+
+		scalled1      = new BufferedImage(scaledW, scaledH, BufferedImage.TYPE_INT_ARGB);
+		scalled2      = new BufferedImage(scaledW, scaledH, BufferedImage.TYPE_INT_ARGB);	
+
+		scalled1.getGraphics().drawImage(image1.getScaledInstance(scaledW, scaledH, Image.SCALE_FAST),0,0,null);
+		scalled2.getGraphics().drawImage(image2.getScaledInstance(scaledW, scaledH, Image.SCALE_FAST),0,0,null);
+		
+		resultImage   = new BufferedImage(image1.getWidth(), image1.getHeight(), BufferedImage.TYPE_INT_ARGB);			
+
+
+		final Graphics2D g2dResult   = resultImage.createGraphics();
+		
+		float scaleTranform = 0.1f;
+		
+		AffineTransform scaleTransform = AffineTransform.getScaleInstance(scaleTranform, scaleTranform);		
+		
+		//--------------------------------------------------
+		g2dResult .drawImage(image2, 0, 0, null);		
+		
+		g2dResult .drawImage(scalled1, 0, 0, null);	
+		g2dResult .setColor(Color.RED);
+		g2dResult .drawRect (0, 0, scaledW-1,scaledH-1);					
+		
+		g2dResult .drawImage(scalled2, scaledW, 0, null);
+		g2dResult .setColor(Color.GREEN);
+		g2dResult .drawRect (scaledW						, 0, 
+							 scaledW-1	,scaledH-1);			
+		
+		
+		ArrayList<Point2D> ptsArrayList=new ArrayList<Point2D>();
+		Point2D[] ptsArray;
+		
+		int dx=10;
+		int dy=10;
+		
+		for (int y = 0; y < scaledH; y += 1) {
+			for (int x = 0; x < scaledW; x += 1) {
+				
+				int c1 = scalled1.getRGB(x, y);
+				int c2 = scalled2.getRGB(x, y);
+
+				if( ! looksLikeColor( c1, c2) ){
+				//if(  c1 != c2 ){	
+					ptsArrayList.add(new Point2D(x *dx,y *dy));
+					//g2dResult.setColor(Color.RED);
+					//g2dResult.drawOval(	x *dx,y *dy,
+					//					dx   ,dy     );		
+					hasDetected = true;
+				}
+			}			
+		}
+		
+		if(hasDetected && ptsArrayList.size()>0){
+			
+			ptsArray = new Point2D[ptsArrayList.size()];
+			
+			ptsArrayList.toArray(ptsArray);
+			GrahamScan gs = new GrahamScan(ptsArray);
+			final Iterable<Point2D> hull = gs.hull();
+
+			Point2D p2dBefore=null;
+			Point2D p2dFirst =null;
+			Point2D p2dLast=null;
+			for(Point2D p2d: hull){
+				//g2dResult.setColor(Color.GREEN);
+				//g2dResult.fillOval((int)p2d.x(),(int)p2d.y(),dx/2,dy/2);
+
+				if(p2dBefore!=null){
+					g2dResult.setColor(Color.YELLOW);
+					g2dResult.drawLine((int)p2dBefore.x()	+dx/2	,(int)p2dBefore.y()	+dy/2,
+										(int)p2d.x()		+dx/2	,(int)p2d.y()		+dy/2);
+				} else {
+					p2dFirst = p2d;
+				}
+				p2dBefore = p2d;
+				p2dLast   = p2d;
+			}
+
+			if(p2dFirst != p2dLast) {
+				g2dResult.setColor(Color.YELLOW);
+				g2dResult.drawLine((int)p2dFirst.x()	+dx/2	,(int)p2dFirst.y()	+dy/2,
+									(int)p2dLast.x()	+dx/2	,(int)p2dLast.y()	+dy/2);
+			}
+		}
+		
+		
+		if(hasDetected){
+			return resultImage;
+		}else{
+			return null;
+		}
+	}
+	
+	private static boolean looksLikeColor(int c_rgb1,int c_rgb2){
+		boolean e=true;
+		
+		byte rgb1[]=new byte[3];
+		byte rgb2[]=new byte[3];
+		
+		
+		rgb1[0] = (byte)((c_rgb1>>16 )&0xFF);
+		rgb1[1] = (byte)((c_rgb1>>8  )&0xFF);
+		rgb1[2] = (byte)((c_rgb1     )&0xFF);
+
+		rgb2[0] = (byte)((c_rgb2>>16 )&0xFF);
+		rgb2[1] = (byte)((c_rgb2>>8  )&0xFF);
+		rgb2[2] = (byte)((c_rgb2     )&0xFF);
+		
+		int d  = 0;
+		int dd = 0;
+		for(int i=0;i<3;i++){
+			d  = (rgb2[i]-rgb1[i]);
+			dd = d*d;
+			e  = e && (dd <= 625);
+		}
+		
+		return e;
+	}
 
 	private static void usage() {
 		System.err.println("Usage: " + SearchColorInImage.class.getName() + " -infputFile=<infputFile>   -outputFile=<outputFile>  -targetColor=#ff0000");

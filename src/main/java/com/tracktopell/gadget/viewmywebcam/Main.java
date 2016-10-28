@@ -6,7 +6,6 @@ import com.github.sarxos.webcam.WebcamDiscoveryListener;
 import com.github.sarxos.webcam.WebcamMotionDetector;
 import com.github.sarxos.webcam.WebcamMotionEvent;
 import com.github.sarxos.webcam.WebcamMotionListener;
-import static com.tracktopell.gadget.viewmywebcam.SearchColorInImage.detectColor;
 import java.awt.Color;
 
 import java.awt.event.ActionEvent;
@@ -34,6 +33,8 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
     private SimpleDateFormat sdfMonitoring = new SimpleDateFormat("ss.SSS");
     private DecimalFormat dfFrames = new DecimalFormat("00000");
     private BufferedImage lastImage;
+	private BufferedImage prevImage;
+	private BufferedImage movingImage;
     private boolean hideMode = true;
     private long videoStartTime = 0;
     private boolean recording = false;
@@ -85,7 +86,7 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
                 System.out.println("-> Webcam gone:" + webcamG);
             }
         });
-
+		/*
         WebcamMotionDetector detector = new WebcamMotionDetector(Webcam.getDefault());
         detector.setInterval(intervarMotionDetection);
         detector.addMotionListener(this);
@@ -96,6 +97,7 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
                 passivateMotionIndicator();
             }            
         }.start();
+		*/
     }
     
     private int  intervarMotionDetection=500;
@@ -122,7 +124,7 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 
                 Thread.sleep(intervalWaitingMotion);
                 if(monitoringStrength != lastMotionStrength){
-                    int level = (int)((lastMotionStrength/100000.0)*100);
+                    int level = (int)((lastMotionStrength/10000.0)*100);
                     System.out.println("=>passivateMotionIndicator: lastMotionStrength=" + lastMotionStrength+", level="+level);
                     
                     movementStrength.setValue(level);
@@ -149,7 +151,7 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
         System.out.println("Detected motion at:" + sdfVideo.format(new Date())+
                 "=>WebcamMotionEvent: strength:" + wme.getStrength());
         lastMotionStrength = wme.getStrength();
-	lastMotionTime     = System.currentTimeMillis();
+		lastMotionTime     = System.currentTimeMillis();
     }
 
     private void lauchCaptureImages() {
@@ -273,14 +275,29 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 
                     if (lastImage != null) {
 						if(detectColor){
-							lastImage = detectColor(lastImage, theTargetColor);
-						}
-							
-                        if (!hideMode) {
-                            wcPanel.setWebcamImage(lastImage);
-                        } else {
-                            wcPanel.setWebcamImage(null);
-                        }
+							// lastImage = detectColor(lastImage, theTargetColor);
+							BufferedImage imgM = null;
+							if(prevImage!=null){
+								movingImage = SearchColorInImage.compareImages(prevImage, lastImage);
+								if(movingImage != null){
+									imgM = movingImage;
+								} else {
+									imgM = lastImage;
+								}
+							}
+							if (!hideMode) {
+								wcPanel.setWebcamImage(imgM);
+							} else {
+								wcPanel.setWebcamImage(null);
+							}
+							prevImage = lastImage;
+						} else{
+							if (!hideMode) {
+								wcPanel.setWebcamImage(lastImage);
+							} else {
+								wcPanel.setWebcamImage(null);
+							}
+						}						
                     } else {
                     }
 

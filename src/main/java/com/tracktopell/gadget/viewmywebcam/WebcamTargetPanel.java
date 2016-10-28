@@ -26,12 +26,16 @@ public class WebcamTargetPanel extends javax.swing.JPanel {
     BufferedImage webcamLastFastPicture;
     BufferedImage personIconImage;
     BufferedImage noCameraIconImage;
-
+	
+	SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSSS");
+	Date date=null;
+	
     boolean paintPersonIcon = true;
-
+	
     public void setWebcamImage(BufferedImage webcamImage) {
         this.webcamPreviousImage = this.webcamImage;
         this.webcamImage = webcamImage;
+		date = new Date();
         repaint();
     }
 
@@ -44,8 +48,9 @@ public class WebcamTargetPanel extends javax.swing.JPanel {
      */
     public WebcamTargetPanel() {
         initComponents();
+		date = new Date();
         try {
-            personIconImage = ImageIO.read(WebcamTargetPanel.class.getResourceAsStream("/images/person-icon.png"));
+            personIconImage   = ImageIO.read(WebcamTargetPanel.class.getResourceAsStream("/images/person-icon.png"));
             noCameraIconImage = ImageIO.read(WebcamTargetPanel.class.getResourceAsStream("/images/noCamera-icon.png"));
         } catch (Exception e) {
         }
@@ -71,8 +76,6 @@ public class WebcamTargetPanel extends javax.swing.JPanel {
             }
         }.start();
     }
-
-    private static SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
 
     private void saveWebcamLastPicture() {
         String fileName = "./CameraSnapshot_" + sdf.format(new Date()) + ".png";
@@ -143,7 +146,6 @@ public class WebcamTargetPanel extends javax.swing.JPanel {
                 imageToPaint = webcamLastPicture;
             } else {
                 imageToPaint = webcamImage;
-
             }
 
             int imgW = imageToPaint.getWidth();
@@ -164,8 +166,11 @@ public class WebcamTargetPanel extends javax.swing.JPanel {
             imgY = (int) (((getHeight() / 2.0) / rImg) - (imgH / 2.0));
 
             BufferedImage rotatedImage = getRotatedImage(imageToPaint);
-
             g2d.drawImage(rotatedImage, 0, imgY, null);
+			
+			
+			g2d.setColor(Color.GREEN);
+			g2d.drawString(sdf.format(date), 5, getHeight()- 15);
 
             g2d.setTransform(atB);
 
