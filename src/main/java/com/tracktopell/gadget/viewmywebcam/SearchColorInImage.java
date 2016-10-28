@@ -266,8 +266,7 @@ public class SearchColorInImage {
 			
 		}
 		
-		if(ptsArrayList.size()>0){
-			
+		if(ptsArrayList.size()>0){			
 			ptsArray = new Point2D[ptsArrayList.size()];
 			
 			ptsArrayList.toArray(ptsArray);

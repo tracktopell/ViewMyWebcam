@@ -6,6 +6,7 @@ import com.github.sarxos.webcam.WebcamDiscoveryListener;
 import com.github.sarxos.webcam.WebcamMotionDetector;
 import com.github.sarxos.webcam.WebcamMotionEvent;
 import com.github.sarxos.webcam.WebcamMotionListener;
+import static com.tracktopell.gadget.viewmywebcam.ImageCompare.saveJPG;
 import java.awt.Color;
 
 import java.awt.event.ActionEvent;
@@ -41,8 +42,7 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 
     public Main() {
         initComponents();
-        wcPanel = (WebcamTargetPanel) wcp;
-        wcPanel.setPaintPersonIcon(true);
+        wcPanel = (WebcamTargetPanel) wcp;        
         
         hideMode = false;
         updateHideShowInfo();
@@ -278,12 +278,24 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 							// lastImage = detectColor(lastImage, theTargetColor);
 							BufferedImage imgM = null;
 							if(prevImage!=null){
-								movingImage = SearchColorInImage.compareImages(prevImage, lastImage);
-								if(movingImage != null){
-									imgM = movingImage;
+								//----------------------- strategy 1
+//								movingImage = SearchColorInImage.compareImages(prevImage, lastImage);
+//								if(movingImage != null){
+//									imgM = movingImage;
+//								} else {
+//									imgM = lastImage;
+//								}
+								//----------------------- strategy 2
+								
+								ImageCompare ic = new ImageCompare(prevImage, lastImage);
+								ic.setParameters(20, 8, 1, 10);
+								ic.setDebugMode(0);
+								ic.compare();
+								if (!ic.match()) {
+									imgM = ic.getChangeIndicator();
 								} else {
 									imgM = lastImage;
-								}
+								}								
 							}
 							if (!hideMode) {
 								wcPanel.setWebcamImage(imgM);
