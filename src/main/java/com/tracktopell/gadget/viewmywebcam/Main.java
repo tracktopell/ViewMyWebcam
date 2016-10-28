@@ -6,6 +6,8 @@ import com.github.sarxos.webcam.WebcamDiscoveryListener;
 import com.github.sarxos.webcam.WebcamMotionDetector;
 import com.github.sarxos.webcam.WebcamMotionEvent;
 import com.github.sarxos.webcam.WebcamMotionListener;
+import static com.tracktopell.gadget.viewmywebcam.SearchColorInImage.detectColor;
+import java.awt.Color;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -242,11 +244,23 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
         videoTimeRecording.setText("");
     }
 
+	private Color theTargetColor = Color.RED;
+	private boolean detectColor = false;
+
+	public void setDetectColor(boolean detectColor) {
+		this.detectColor = detectColor;
+	}
+
+	public boolean isDetectColor() {
+		return detectColor;
+	}
+		
     private void captureImages() {
         try {
 
             Webcam webcam = Webcam.getDefault();
-
+			
+			
             if (webcam != null) {
                 System.out.println("-> Webcam name:" + webcam.getName());
                 System.out.println("-> Webcam class:" + webcam.getClass());
@@ -258,6 +272,10 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
                     lastImage = webcam.getImage();
 
                     if (lastImage != null) {
+						if(detectColor){
+							lastImage = detectColor(lastImage, theTargetColor);
+						}
+							
                         if (!hideMode) {
                             wcPanel.setWebcamImage(lastImage);
                         } else {
@@ -309,6 +327,7 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
         wcp = new WebcamTargetPanel();
         toolBarControls = new javax.swing.JToolBar();
         jPanel2 = new javax.swing.JPanel();
+        detectColorFigure = new javax.swing.JCheckBox();
         hideModeBtn = new javax.swing.JButton();
         superfotoBtn = new javax.swing.JButton();
         videoStartStop = new javax.swing.JButton();
@@ -322,16 +341,24 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
         wcp.setLayout(wcpLayout);
         wcpLayout.setHorizontalGroup(
             wcpLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 332, Short.MAX_VALUE)
+            .addGap(0, 482, Short.MAX_VALUE)
         );
         wcpLayout.setVerticalGroup(
             wcpLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 197, Short.MAX_VALUE)
+            .addGap(0, 207, Short.MAX_VALUE)
         );
 
         getContentPane().add(wcp, java.awt.BorderLayout.CENTER);
 
         toolBarControls.setRollover(true);
+
+        detectColorFigure.setText("D");
+        detectColorFigure.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                detectColorFigureStateChanged(evt);
+            }
+        });
+        jPanel2.add(detectColorFigure);
 
         hideModeBtn.setFont(new java.awt.Font("Monospaced", 1, 12)); // NOI18N
         hideModeBtn.setText("H");
@@ -361,9 +388,17 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 
         getContentPane().add(toolBarControls, java.awt.BorderLayout.SOUTH);
 
-        setSize(new java.awt.Dimension(340, 271));
+        setSize(new java.awt.Dimension(490, 281));
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
+
+    private void detectColorFigureStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_detectColorFigureStateChanged
+        if(detectColorFigure.isSelected()){
+			detectColor = true;
+		} else {
+			detectColor = false;
+		}
+    }//GEN-LAST:event_detectColorFigureStateChanged
 	private static Main captureHdn = null;
 
     public static void main(String[] args) {
@@ -374,6 +409,7 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JCheckBox detectColorFigure;
     private javax.swing.JButton hideModeBtn;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JProgressBar movementStrength;
