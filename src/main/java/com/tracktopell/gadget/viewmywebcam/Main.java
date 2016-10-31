@@ -9,6 +9,8 @@ import java.awt.Color;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.text.DecimalFormat;
@@ -26,84 +28,108 @@ import javax.swing.DefaultComboBoxModel;
  */
 public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 
-    /**
-     * Creates new form Main
-     */
-    private static WebcamTargetPanel wcPanel;
-    private SimpleDateFormat sdfVideo = new SimpleDateFormat("yyyyMMdd_HHmmss");
-    private SimpleDateFormat sdfRecordingVideo = new SimpleDateFormat("mm:ss.S");
-    private SimpleDateFormat sdfMonitoring = new SimpleDateFormat("ss.SSS");
-    private DecimalFormat dfFrames = new DecimalFormat("00000");
-    private BufferedImage lastImage;
+	/**
+	 * Creates new form Main
+	 */
+	private static WebcamTargetPanel wcPanel;
+	private SimpleDateFormat sdfVideo = new SimpleDateFormat("yyyyMMdd_HHmmss");
+	private SimpleDateFormat sdfRecordingVideo = new SimpleDateFormat("mm:ss.S");
+	private SimpleDateFormat sdfMonitoring = new SimpleDateFormat("ss.SSS");
+	private DecimalFormat dfFrames = new DecimalFormat("00000");
+	private BufferedImage lastImage;
 	private BufferedImage prevImage;
 	private BufferedImage movingImage;
-    private boolean hideMode = true;
-    private long videoStartTime = 0;
-    private boolean recording = false;
-	private Webcam  webcam;
-	private List<Webcam>  webcamsConnectedList;
+	private boolean hideMode = true;
+	private long videoStartTime = 0;
+	private boolean recording = false;
+	private Webcam webcam;
+	private Webcam webcamNowSelected;
+	private List<Webcam> webcamsConnectedList;
 
-    public Main() {
-        initComponents();
-        wcPanel = (WebcamTargetPanel) wcp;        
-        
-        hideMode = false;
-        updateHideShowInfo();
-        
-        hideModeBtn.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                hideMode = !hideMode;
-                updateHideShowInfo();
-            }
-        });
-
-        superfotoBtn.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                new Thread() {
-                    @Override
-                    public void run() {
-                        teakePicture();
-                    }
-                }.start();
-            }
-        });
-
-        videoStartStop.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                if (!recording) {
-                    videoStart();
-                } else {
-                    videoStop();
-                }
-            }
-        });
+	public Main() {
+		initComponents();
+		wcPanel = (WebcamTargetPanel) wcp;
+		wcPanel.setPaintTargetIcon(true);
 		
+		hideMode = false;
+		updateHideShowInfo();
+
+		hideModeBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				hideMode = !hideMode;
+				updateHideShowInfo();
+			}
+		});
+
+		superfotoBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				new Thread() {
+					@Override
+					public void run() {
+						teakePicture();
+					}
+				}.start();
+			}
+		});
+
+		videoStartStop.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (!recording) {
+					videoStart();
+				} else {
+					videoStop();
+				}
+			}
+		});
+
 		webcamsConnectedList = Webcam.getWebcams();
 		System.out.println("Webcam.getWebcams:");
 		int nwc = 0;
 		String[] webcamsConnectedNames = new String[webcamsConnectedList.size()];
-		for(Webcam wc:  webcamsConnectedList){
-			System.out.println("=>["+nwc+"]:"+wc);
+		for (Webcam wc : webcamsConnectedList) {
+			System.out.println("=>[" + nwc + "]:" + wc);
 			webcamsConnectedNames[nwc] = wc.getName();
 			nwc++;
 		}
-		
-		cameraComboBox.setModel(new DefaultComboBoxModel<String>(webcamsConnectedNames));
-		
-		webcam = Webcam.getDefault();
-		
-        Webcam.addDiscoveryListener(new WebcamDiscoveryListener() {
-            public void webcamFound(WebcamDiscoveryEvent wde) {
-                Webcam webcamF = wde.getWebcam();
-                System.out.println("-> Webcam found:" + webcamF);
-            }
 
-            public void webcamGone(WebcamDiscoveryEvent wde) {
-                Webcam webcamG = wde.getWebcam();
-                System.out.println("-> Webcam gone:" + webcamG);
-            }
-        });
+		cameraComboBox.setModel(new DefaultComboBoxModel<String>(webcamsConnectedNames));
+
+		cameraComboBox.addItemListener(new ItemListener() {
+			@Override
+			public void itemStateChanged(ItemEvent event) {
+				if (event.getStateChange() == ItemEvent.SELECTED) {
+					String cameraName = (String)event.getItem();
+
+					webcamNowSelected = null;
+					for (Webcam wc : webcamsConnectedList) {
+						if(wc.getName().equalsIgnoreCase(cameraName)){
+							webcamNowSelected = wc;
+							break;
+						}
+					}
+					if(webcamNowSelected != null) {
+						
+						selectAnotherCamera();
+					}
+				}
+			}
+		});
+
+		webcam = Webcam.getDefault();
+		webcamNowSelected = null;
 		
+		Webcam.addDiscoveryListener(new WebcamDiscoveryListener() {
+			public void webcamFound(WebcamDiscoveryEvent wde) {
+				Webcam webcamF = wde.getWebcam();
+				System.out.println("-> Webcam found:" + webcamF);
+			}
+
+			public void webcamGone(WebcamDiscoveryEvent wde) {
+				Webcam webcamG = wde.getWebcam();
+				System.out.println("-> Webcam gone:" + webcamG);
+			}
+		});
+
 		/*
         WebcamMotionDetector detector = new WebcamMotionDetector(Webcam.getDefault());
         detector.setInterval(intervarMotionDetection);
@@ -115,152 +141,165 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
                 passivateMotionIndicator();
             }            
         }.start();
-		*/		
-    }
-    
-    private int  intervarMotionDetection=500;
-    private int  lastMotionStrength = 0;
-    private long lastMotionTime = 0;
-    private boolean runningPaivateMS=false;
-    
-    private void passivateMotionIndicator(){
-        runningPaivateMS = true;
-        long now = System.currentTimeMillis();
-        long intervalWaitingMotion=intervarMotionDetection/2;
-        try{
-            int monitoringStrength=0;
-            final int maxTimeToWait = intervarMotionDetection*5;
-            long dt = 0;
-            while(runningPaivateMS){
-                now = System.currentTimeMillis();
-                dt = (now - lastMotionTime);
-                
-                if(lastMotionStrength>0 && dt >= maxTimeToWait){
-                    lastMotionStrength = 0;
-                    System.out.println("=>passivateMotionIndicator: PASIVATE ! DT="+sdfMonitoring.format(new Date(dt)));
-                }
+		 */
+	}
 
-                Thread.sleep(intervalWaitingMotion);
-                if(monitoringStrength != lastMotionStrength){
-                    int level = (int)((lastMotionStrength/10000.0)*100);
-                    System.out.println("=>passivateMotionIndicator: lastMotionStrength=" + lastMotionStrength+", level="+level);
-                    
-                    movementStrength.setValue(level);
-                }
-                monitoringStrength = lastMotionStrength;
-            }
-        }catch(InterruptedException ie){
-        
-        }
-    }
+	private void selectAnotherCamera() {
+		new Thread(){
+			@Override
+			public void run() {
+				webcam.close();
+				webcam = null;
+				webcam = webcamNowSelected;
+				webcam.open();
+				webcamNowSelected = null;
+			}
+		}.start();
+	}
 
-    private void updateHideShowInfo() {
-        if(hideMode){
-            hideModeBtn.setText("S");
-            hideModeBtn.setToolTipText("Show Panel Camera");
-        } else{
-            hideModeBtn.setText("H");
-            hideModeBtn.setToolTipText("Hide Panel Camera");
-        }
-    }
+	private int intervarMotionDetection = 500;
+	private int lastMotionStrength = 0;
+	private long lastMotionTime = 0;
+	private boolean runningPaivateMS = false;
 
-    @Override
-    public void motionDetected(WebcamMotionEvent wme) {
-        System.out.println("Detected motion at:" + sdfVideo.format(new Date())+
-                "=>WebcamMotionEvent: strength:" + wme.getStrength());
-        lastMotionStrength = wme.getStrength();
-		lastMotionTime     = System.currentTimeMillis();
-    }
+	private void passivateMotionIndicator() {
+		runningPaivateMS = true;
+		long now = System.currentTimeMillis();
+		long intervalWaitingMotion = intervarMotionDetection / 2;
+		try {
+			int monitoringStrength = 0;
+			final int maxTimeToWait = intervarMotionDetection * 5;
+			long dt = 0;
+			while (runningPaivateMS) {
+				now = System.currentTimeMillis();
+				dt = (now - lastMotionTime);
 
-    private void lauchCaptureImages() {
-        new Thread() {
-            @Override
-            public void run() {
-                captureImages();
-            }
-        }.start();
+				if (lastMotionStrength > 0 && dt >= maxTimeToWait) {
+					lastMotionStrength = 0;
+					System.out.println("=>passivateMotionIndicator: PASIVATE ! DT=" + sdfMonitoring.format(new Date(dt)));
+				}
 
-    }
+				Thread.sleep(intervalWaitingMotion);
+				if (monitoringStrength != lastMotionStrength) {
+					int level = (int) ((lastMotionStrength / 10000.0) * 100);
+					System.out.println("=>passivateMotionIndicator: lastMotionStrength=" + lastMotionStrength + ", level=" + level);
 
-    private void videoStart() {
-        new Thread() {
-            @Override
-            public void run() {
-                videoRecording();
-            }
-        }.start();
-    }
+					movementStrength.setValue(level);
+				}
+				monitoringStrength = lastMotionStrength;
+			}
+		} catch (InterruptedException ie) {
 
-    private void teakePicture() {
-        if (lastImage != null) {
-            try {
-                ImageIO.write(lastImage, "JPG", new File("CameraFastSnapshot_" + sdfVideo.format(new Date()) + ".jpg"));
-            } catch (Exception e) {
-                e.printStackTrace(System.err);
-            }
-        }
-    }
+		}
+	}
 
-    private void videoRecording() {
+	private void updateHideShowInfo() {
+		if (hideMode) {
+			hideModeBtn.setText("S");
+			hideModeBtn.setToolTipText("Show Panel Camera");
+		} else {
+			hideModeBtn.setText("H");
+			hideModeBtn.setToolTipText("Hide Panel Camera");
+		}
+	}
+
+	@Override
+	public void motionDetected(WebcamMotionEvent wme) {
+		System.out.println("Detected motion at:" + sdfVideo.format(new Date())
+				+ "=>WebcamMotionEvent: strength:" + wme.getStrength());
+		lastMotionStrength = wme.getStrength();
+		lastMotionTime = System.currentTimeMillis();
+	}
+
+	private void lauchCaptureImages() {
+		new Thread() {
+			@Override
+			public void run() {
+				captureImages();
+			}
+		}.start();
+
+	}
+
+	private void videoStart() {
+		new Thread() {
+			@Override
+			public void run() {
+				videoRecording();
+			}
+		}.start();
+	}
+
+	private void teakePicture() {
+		if (lastImage != null) {
+			try {
+				ImageIO.write(lastImage, "JPG", new File("CameraFastSnapshot_" + sdfVideo.format(new Date()) + ".jpg"));
+			} catch (Exception e) {
+				e.printStackTrace(System.err);
+			}
+		}
+	}
+
+	private void videoRecording() {
 
 //		File file = new File("Recording_"+sdfVideo.format(new Date())+".ts");
 //		IMediaWriter writer = ToolFactory.makeWriter(file.getName());
 //		Dimension size = WebcamResolution.QVGA.getSize();
 //		writer.addVideoStream(0, 0, ICodec.ID.CODEC_ID_H264, size.width, size.height);
-        try {
 
-            if (webcam != null) {
-                System.out.println("-> Webcam open: Start video Recording");
-                long currentTimeVideo = 0;
-                long diffTime = 0;
-                int frame = 0;
-                recording = true;
-                videoStartStop.setText("[_]");
-                videoStartTime = System.currentTimeMillis();
-                Date dateStart = new Date(videoStartTime);
-                while (true) {
+		try {
+			if (webcam != null) {
+				System.out.println("-> Webcam open: Start video Recording");
+				long currentTimeVideo = 0;
+				long diffTime = 0;
+				int frame = 0;
+				recording = true;
+				videoStartStop.setText("[_]");
+				videoStartTime = System.currentTimeMillis();
+				Date dateStart = new Date(videoStartTime);
+				while (true) {
 
-                    if (lastImage != null) {
-                        File dirRecodings = new File("./recordings/");
-                        if (!dirRecodings.exists()) {
-                            dirRecodings.mkdirs();
-                        }
-                        File fileRecording = new File(dirRecodings, "Recording_" + sdfVideo.format(dateStart) + "_F" + dfFrames.format(frame) + ".jpg");
-                        ImageIO.write(lastImage, "JPG", fileRecording);
-                    } else {
+					if (lastImage != null) {
+						File dirRecodings = new File("./recordings/");
+						if (!dirRecodings.exists()) {
+							dirRecodings.mkdirs();
+						}
+						File fileRecording = new File(dirRecodings, "Recording_" + sdfVideo.format(dateStart) + "_F" + dfFrames.format(frame) + ".jpg");
+						ImageIO.write(lastImage, "JPG", fileRecording);
+					} else {
 
-                    }
-                    currentTimeVideo = System.currentTimeMillis();
-                    diffTime = currentTimeVideo - videoStartTime;
-                    String recordingText = sdfRecordingVideo.format(new Date(diffTime));
-                    //System.out.println("-> Recording:"+recordingText);
-                    videoTimeRecording.setText(recordingText);
-                    Thread.sleep(200);
+					}
+					currentTimeVideo = System.currentTimeMillis();
+					diffTime = currentTimeVideo - videoStartTime;
+					String recordingText = sdfRecordingVideo.format(new Date(diffTime));
+					//System.out.println("-> Recording:"+recordingText);
+					videoTimeRecording.setText(recordingText);
+					Thread.sleep(200);
 
-                    if (!recording) {
-                        break;
-                    }
+					if (!recording) {
+						break;
+					}
 
-                    frame++;
-                }
-                System.out.println("-> Webcam open: Finished video Recording");
+					frame++;
+				}
+				System.out.println("-> Webcam open: Finished video Recording");
 
-            } else {
-                System.out.println("-> No webcam :( ");
-                wcPanel.repaint();
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace(System.err);
-        }
+			} else {
+				System.out.println("-> No webcam :( ");
+				wcPanel.repaint();
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace(System.err);
+		}
 
-    }
+	}
 
-    private void videoStop() {
-        System.out.println("-> STOP Recording ");
-        videoStartStop.setText("O");
-        recording = false;
-        videoTimeRecording.setText("");
-    }
+	private void videoStop() {
+		System.out.println("-> STOP Recording ");
+		videoStartStop.setText("O");
+		recording = false;
+		videoTimeRecording.setText("");
+	}
 
 	private Color theTargetColor = Color.RED;
 	private boolean detectColor = false;
@@ -272,99 +311,98 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 	public boolean isDetectColor() {
 		return detectColor;
 	}
-		
-    private void captureImages() {
-        try {
 
-            //Webcam webcam = Webcam.getDefault();			
-			
-            if (webcam != null) {
-                System.out.println("-> Webcam name:" + webcam.getName());
-                System.out.println("-> Webcam class:" + webcam.getClass());
+	private void captureImages() {
+		try {
 
-                webcam.open();
-                System.out.println("-> Webcam open");
-                while (true) {
+			//Webcam webcam = Webcam.getDefault();			
+			if (webcam != null) {
+				System.out.println("-> Webcam name:" + webcam.getName());
+				System.out.println("-> Webcam class:" + webcam.getClass());
 
-                    lastImage = webcam.getImage();
+				webcam.open();
+				System.out.println("-> Webcam open");
+				while (true) {
+					if (webcam != null) {
+						lastImage = webcam.getImage();
 
-                    if (lastImage != null) {
-						if(detectColor){
-							// lastImage = detectColor(lastImage, theTargetColor);
-							BufferedImage imgM = null;
-							if(prevImage!=null){
-								//----------------------- strategy 1
-//								movingImage = SearchColorInImage.compareImages(prevImage, lastImage);
-//								if(movingImage != null){
-//									imgM = movingImage;
-//								} else {
-//									imgM = lastImage;
-//								}
-								//----------------------- strategy 2
-								
-								ImageCompare ic = new ImageCompare(prevImage, lastImage);
-								ic.setParameters(20, 8, 1, 10);
-								ic.setDebugMode(0);
-								ic.compare();
-								if (!ic.match()) {
-									imgM = ic.getChangeIndicator();
+						if (lastImage != null) {
+							if (detectColor) {
+								// lastImage = detectColor(lastImage, theTargetColor);
+								BufferedImage imgM = null;
+								if (prevImage != null) {
+									//----------------------- strategy 1
+	//								movingImage = SearchColorInImage.compareImages(prevImage, lastImage);
+	//								if(movingImage != null){
+	//									imgM = movingImage;
+	//								} else {
+	//									imgM = lastImage;
+	//								}
+									//----------------------- strategy 2
+
+									ImageCompare ic = new ImageCompare(prevImage, lastImage);
+									ic.setParameters(20, 8, 1, 10);
+									ic.setDebugMode(0);
+									ic.compare();
+									if (!ic.match()) {
+										imgM = ic.getChangeIndicator();
+									} else {
+										imgM = lastImage;
+									}
+								}
+								if (!hideMode) {
+									wcPanel.setWebcamImage(imgM);
 								} else {
-									imgM = lastImage;
-								}								
-							}
-							if (!hideMode) {
-								wcPanel.setWebcamImage(imgM);
-							} else {
-								wcPanel.setWebcamImage(null);
-							}
-							prevImage = lastImage;
-						} else{
-							if (!hideMode) {
+									wcPanel.setWebcamImage(null);
+								}
+								prevImage = lastImage;
+							} else if (!hideMode) {
 								wcPanel.setWebcamImage(lastImage);
 							} else {
 								wcPanel.setWebcamImage(null);
 							}
-						}						
-                    } else {
-                    }
+						} else {
+						}
+					} else {
+						System.out.println("...Waiting webcam ! ");
+					}
+					Thread.sleep(100);
+				}
+			} else {
+				System.out.println("-> No webcam :( ");
+				wcPanel.repaint();
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace(System.err);
+		}
+	}
 
-                    Thread.sleep(100);
-                }
-            } else {
-                System.out.println("-> No webcam :( ");
-                wcPanel.repaint();
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace(System.err);
-        }
-    }
+	private void captureVideo() {
+		try {
 
-    private void captureVideo() {
-        try {
+			Webcam webcam = Webcam.getDefault();
 
-            Webcam webcam = Webcam.getDefault();
+			if (webcam != null) {
+				System.out.println("-> Webcam name:" + webcam.getName());
+				System.out.println("-> Webcam class:" + webcam.getClass());
+				webcam.open();
+				System.out.println("-> Webcam open");
 
-            if (webcam != null) {
-                System.out.println("-> Webcam name:" + webcam.getName());
-                System.out.println("-> Webcam class:" + webcam.getClass());
-                webcam.open();
-                System.out.println("-> Webcam open");
+			} else {
+				System.out.println("-> No webcam :( ");
+				wcPanel.repaint();
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace(System.err);
+		}
+	}
 
-            } else {
-                System.out.println("-> No webcam :( ");
-                wcPanel.repaint();
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace(System.err);
-        }
-    }
-
-    /**
-     * This method is called from within the constructor to initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is always
-     * regenerated by the Form Editor.
-     */
-    @SuppressWarnings("unchecked")
+	/**
+	 * This method is called from within the constructor to initialize the form.
+	 * WARNING: Do NOT modify this code. The content of this method is always
+	 * regenerated by the Form Editor.
+	 */
+	@SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
@@ -388,11 +426,11 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
         wcp.setLayout(wcpLayout);
         wcpLayout.setHorizontalGroup(
             wcpLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 482, Short.MAX_VALUE)
+            .addGap(0, 469, Short.MAX_VALUE)
         );
         wcpLayout.setVerticalGroup(
             wcpLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 171, Short.MAX_VALUE)
+            .addGap(0, 290, Short.MAX_VALUE)
         );
 
         getContentPane().add(wcp, java.awt.BorderLayout.CENTER);
@@ -441,12 +479,12 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 
         getContentPane().add(jPanel1, java.awt.BorderLayout.PAGE_START);
 
-        setSize(new java.awt.Dimension(490, 281));
+        setSize(new java.awt.Dimension(477, 400));
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     private void detectColorFigureStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_detectColorFigureStateChanged
-        if(detectColorFigure.isSelected()){
+		if (detectColorFigure.isSelected()) {
 			detectColor = true;
 		} else {
 			detectColor = false;
@@ -454,11 +492,11 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
     }//GEN-LAST:event_detectColorFigureStateChanged
 	private static Main captureHdn = null;
 
-    public static void main(String[] args) {
-        captureHdn = new Main();
-        captureHdn.setVisible(true);
-        captureHdn.lauchCaptureImages();
-    }
+	public static void main(String[] args) {
+		captureHdn = new Main();
+		captureHdn.setVisible(true);
+		captureHdn.lauchCaptureImages();
+	}
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

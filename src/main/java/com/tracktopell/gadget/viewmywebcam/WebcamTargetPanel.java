@@ -231,6 +231,9 @@ public class WebcamTargetPanel extends javax.swing.JPanel {
 
 					int imgHS = (int) (imgH * rImg);
 
+					g.drawRect(0, (getHeight() - imgHS )/ 2,
+							getWidth()-1, imgHS  );
+					
 					//VERTICAL
 					g.drawLine(getWidth() / 2, getHeight() / 2 - imgHS / 2,
 							getWidth() / 2, getHeight() / 2 + imgHS / 2);
