@@ -3,10 +3,8 @@ package com.tracktopell.gadget.viewmywebcam;
 import com.github.sarxos.webcam.Webcam;
 import com.github.sarxos.webcam.WebcamDiscoveryEvent;
 import com.github.sarxos.webcam.WebcamDiscoveryListener;
-import com.github.sarxos.webcam.WebcamMotionDetector;
 import com.github.sarxos.webcam.WebcamMotionEvent;
 import com.github.sarxos.webcam.WebcamMotionListener;
-import static com.tracktopell.gadget.viewmywebcam.ImageCompare.saveJPG;
 import java.awt.Color;
 
 import java.awt.event.ActionEvent;
@@ -16,7 +14,10 @@ import java.io.File;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import javax.imageio.ImageIO;
+import javax.swing.ComboBoxModel;
+import javax.swing.DefaultComboBoxModel;
 
 /**
  * com.tracktopell.gadget.viewmywebcam.Main
@@ -39,6 +40,8 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
     private boolean hideMode = true;
     private long videoStartTime = 0;
     private boolean recording = false;
+	private Webcam  webcam;
+	private List<Webcam>  webcamsConnectedList;
 
     public Main() {
         initComponents();
@@ -74,7 +77,21 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
                 }
             }
         });
-
+		
+		webcamsConnectedList = Webcam.getWebcams();
+		System.out.println("Webcam.getWebcams:");
+		int nwc = 0;
+		String[] webcamsConnectedNames = new String[webcamsConnectedList.size()];
+		for(Webcam wc:  webcamsConnectedList){
+			System.out.println("=>["+nwc+"]:"+wc);
+			webcamsConnectedNames[nwc] = wc.getName();
+			nwc++;
+		}
+		
+		cameraComboBox.setModel(new DefaultComboBoxModel<String>(webcamsConnectedNames));
+		
+		webcam = Webcam.getDefault();
+		
         Webcam.addDiscoveryListener(new WebcamDiscoveryListener() {
             public void webcamFound(WebcamDiscoveryEvent wde) {
                 Webcam webcamF = wde.getWebcam();
@@ -86,6 +103,7 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
                 System.out.println("-> Webcam gone:" + webcamG);
             }
         });
+		
 		/*
         WebcamMotionDetector detector = new WebcamMotionDetector(Webcam.getDefault());
         detector.setInterval(intervarMotionDetection);
@@ -97,7 +115,7 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
                 passivateMotionIndicator();
             }            
         }.start();
-		*/
+		*/		
     }
     
     private int  intervarMotionDetection=500;
@@ -191,8 +209,6 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 //		writer.addVideoStream(0, 0, ICodec.ID.CODEC_ID_H264, size.width, size.height);
         try {
 
-            Webcam webcam = Webcam.getDefault();
-
             if (webcam != null) {
                 System.out.println("-> Webcam open: Start video Recording");
                 long currentTimeVideo = 0;
@@ -260,8 +276,7 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
     private void captureImages() {
         try {
 
-            Webcam webcam = Webcam.getDefault();
-			
+            //Webcam webcam = Webcam.getDefault();			
 			
             if (webcam != null) {
                 System.out.println("-> Webcam name:" + webcam.getName());
@@ -362,6 +377,9 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
         videoStartStop = new javax.swing.JButton();
         videoTimeRecording = new javax.swing.JTextField();
         movementStrength = new javax.swing.JProgressBar();
+        jPanel1 = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        cameraComboBox = new javax.swing.JComboBox<>();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Tracktopell : ViewMyWebcam");
@@ -374,7 +392,7 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
         );
         wcpLayout.setVerticalGroup(
             wcpLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 207, Short.MAX_VALUE)
+            .addGap(0, 171, Short.MAX_VALUE)
         );
 
         getContentPane().add(wcp, java.awt.BorderLayout.CENTER);
@@ -417,6 +435,12 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 
         getContentPane().add(toolBarControls, java.awt.BorderLayout.SOUTH);
 
+        jLabel1.setText("Camera :");
+        jPanel1.add(jLabel1);
+        jPanel1.add(cameraComboBox);
+
+        getContentPane().add(jPanel1, java.awt.BorderLayout.PAGE_START);
+
         setSize(new java.awt.Dimension(490, 281));
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
@@ -438,8 +462,11 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JComboBox<String> cameraComboBox;
     private javax.swing.JCheckBox detectColorFigure;
     private javax.swing.JButton hideModeBtn;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JProgressBar movementStrength;
     private javax.swing.JButton superfotoBtn;
