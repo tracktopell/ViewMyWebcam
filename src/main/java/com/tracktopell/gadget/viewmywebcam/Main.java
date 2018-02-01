@@ -306,6 +306,7 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 
 	public void setDetectColor(boolean detectColor) {
 		this.detectColor = detectColor;
+        System.out.println("-> setDetectColor:"+this.detectColor);
 	}
 
 	public boolean isDetectColor() {
@@ -324,11 +325,11 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 				System.out.println("-> Webcam open");
 				while (true) {
 					if (webcam != null) {
-						lastImage = webcam.getImage();
+						//lastImage = webcam.getImage();
 
 						if (lastImage != null) {
 							if (detectColor) {
-								// lastImage = detectColor(lastImage, theTargetColor);
+                                lastImage = SearchColorInImage.detectColor(lastImage, theTargetColor);
 								BufferedImage imgM = null;
 								if (prevImage != null) {
 									//----------------------- strategy 1
@@ -410,6 +411,7 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
         toolBarControls = new javax.swing.JToolBar();
         jPanel2 = new javax.swing.JPanel();
         detectColorFigure = new javax.swing.JCheckBox();
+        detectCol = new javax.swing.JCheckBox();
         hideModeBtn = new javax.swing.JButton();
         superfotoBtn = new javax.swing.JButton();
         videoStartStop = new javax.swing.JButton();
@@ -437,13 +439,16 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 
         toolBarControls.setRollover(true);
 
-        detectColorFigure.setText("D");
+        detectColorFigure.setText("M");
         detectColorFigure.addChangeListener(new javax.swing.event.ChangeListener() {
             public void stateChanged(javax.swing.event.ChangeEvent evt) {
                 detectColorFigureStateChanged(evt);
             }
         });
         jPanel2.add(detectColorFigure);
+
+        detectCol.setText("C");
+        jPanel2.add(detectCol);
 
         hideModeBtn.setFont(new java.awt.Font("Monospaced", 1, 12)); // NOI18N
         hideModeBtn.setText("H");
@@ -501,6 +506,7 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JComboBox<String> cameraComboBox;
+    private javax.swing.JCheckBox detectCol;
     private javax.swing.JCheckBox detectColorFigure;
     private javax.swing.JButton hideModeBtn;
     private javax.swing.JLabel jLabel1;
