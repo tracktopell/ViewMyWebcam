@@ -325,7 +325,7 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 				System.out.println("-> Webcam open");
 				while (true) {
 					if (webcam != null) {
-						//lastImage = webcam.getImage();
+						lastImage = webcam.getImage();
 
 						if (lastImage != null) {
 							if (detectColor) {
