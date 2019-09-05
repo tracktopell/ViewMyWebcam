@@ -302,15 +302,18 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 	}
 
 	private Color theTargetColor = Color.RED;
-	private boolean detectColor = false;
+
+	private boolean detectMovment = false;
+	
+	private boolean detectColor  = false;
 
 	public void setDetectColor(boolean detectColor) {
-		this.detectColor = detectColor;
-        System.out.println("-> setDetectColor:"+this.detectColor);
+		this.detectMovment = detectColor;
+        System.out.println("-> setDetectColor:"+this.detectMovment);
 	}
 
 	public boolean isDetectColor() {
-		return detectColor;
+		return detectMovment;
 	}
 
 	private void captureImages() {
@@ -328,27 +331,34 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 						lastImage = webcam.getImage();
 
 						if (lastImage != null) {
-							if (detectColor) {
-                                lastImage = SearchColorInImage.detectColor(lastImage, theTargetColor);
+							if (detectMovment) {                                
 								BufferedImage imgM = null;
 								if (prevImage != null) {
-									//----------------------- strategy 1
-	//								movingImage = SearchColorInImage.compareImages(prevImage, lastImage);
-	//								if(movingImage != null){
-	//									imgM = movingImage;
-	//								} else {
-	//									imgM = lastImage;
-	//								}
-									//----------------------- strategy 2
+									if( detectColor){
+//										ImageCompare ic = new ImageCompare(prevImage, lastImage);
+//										ic.setParameters(20, 8, 1, 10);
+//										ic.setDebugMode(0);
+//										ic.compare();
+//										if (!ic.match()) {
+//											imgM = ic.getChangeIndicator();
+//										} else {
+//											imgM = lastImage;
+//										}
 
-									ImageCompare ic = new ImageCompare(prevImage, lastImage);
-									ic.setParameters(20, 8, 1, 10);
-									ic.setDebugMode(0);
-									ic.compare();
-									if (!ic.match()) {
-										imgM = ic.getChangeIndicator();
-									} else {
-										imgM = lastImage;
+										movingImage = SearchColorInImage.detectColor(lastImage, theTargetColor);
+										if(movingImage != null){
+											imgM = movingImage;
+										} else {
+											imgM = lastImage;
+										}
+									} else {										
+										movingImage = SearchColorInImage.compareImages(prevImage, lastImage);
+										if(movingImage != null){
+											imgM = movingImage;
+										} else {
+											imgM = lastImage;
+										}
+										
 									}
 								}
 								if (!hideMode) {
@@ -410,7 +420,7 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
         wcp = new WebcamTargetPanel();
         toolBarControls = new javax.swing.JToolBar();
         jPanel2 = new javax.swing.JPanel();
-        detectColorFigure = new javax.swing.JCheckBox();
+        detectMov = new javax.swing.JCheckBox();
         detectCol = new javax.swing.JCheckBox();
         hideModeBtn = new javax.swing.JButton();
         superfotoBtn = new javax.swing.JButton();
@@ -439,15 +449,20 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
 
         toolBarControls.setRollover(true);
 
-        detectColorFigure.setText("M");
-        detectColorFigure.addChangeListener(new javax.swing.event.ChangeListener() {
+        detectMov.setText("M");
+        detectMov.addChangeListener(new javax.swing.event.ChangeListener() {
             public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                detectColorFigureStateChanged(evt);
+                detectMovStateChanged(evt);
             }
         });
-        jPanel2.add(detectColorFigure);
+        jPanel2.add(detectMov);
 
         detectCol.setText("C");
+        detectCol.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                detectColStateChanged(evt);
+            }
+        });
         jPanel2.add(detectCol);
 
         hideModeBtn.setFont(new java.awt.Font("Monospaced", 1, 12)); // NOI18N
@@ -488,13 +503,22 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
-    private void detectColorFigureStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_detectColorFigureStateChanged
-		if (detectColorFigure.isSelected()) {
+    private void detectMovStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_detectMovStateChanged
+		if (detectMov.isSelected()) {
+			detectMovment = true;
+		} else {
+			detectMovment = false;
+		}
+    }//GEN-LAST:event_detectMovStateChanged
+
+    private void detectColStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_detectColStateChanged
+        if (detectCol.isSelected()) {
 			detectColor = true;
 		} else {
 			detectColor = false;
 		}
-    }//GEN-LAST:event_detectColorFigureStateChanged
+    }//GEN-LAST:event_detectColStateChanged
+
 	private static Main captureHdn = null;
 
 	public static void main(String[] args) {
@@ -507,7 +531,7 @@ public class Main extends javax.swing.JFrame implements WebcamMotionListener {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JComboBox<String> cameraComboBox;
     private javax.swing.JCheckBox detectCol;
-    private javax.swing.JCheckBox detectColorFigure;
+    private javax.swing.JCheckBox detectMov;
     private javax.swing.JButton hideModeBtn;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;

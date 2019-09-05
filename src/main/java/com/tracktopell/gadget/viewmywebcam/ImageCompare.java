@@ -91,7 +91,7 @@ public class ImageCompare {
 		// setup change display image
 		imgc = imageToBufferedImage(img2);
 		Graphics2D gc = imgc.createGraphics();
-		gc.setColor(Color.RED);
+		gc.setColor(Color.CYAN);
 		// convert to gray images.
 		img1 = imageToBufferedImage(GrayFilter.createDisabledImage(img1));
 		img2 = imageToBufferedImage(GrayFilter.createDisabledImage(img2));

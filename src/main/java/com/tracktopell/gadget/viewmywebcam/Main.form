@@ -64,18 +64,21 @@
 
           <Layout class="org.netbeans.modules.form.compat2.layouts.DesignFlowLayout"/>
           <SubComponents>
-            <Component class="javax.swing.JCheckBox" name="detectColorFigure">
+            <Component class="javax.swing.JCheckBox" name="detectMov">
               <Properties>
                 <Property name="text" type="java.lang.String" value="M"/>
               </Properties>
               <Events>
-                <EventHandler event="stateChanged" listener="javax.swing.event.ChangeListener" parameters="javax.swing.event.ChangeEvent" handler="detectColorFigureStateChanged"/>
+                <EventHandler event="stateChanged" listener="javax.swing.event.ChangeListener" parameters="javax.swing.event.ChangeEvent" handler="detectMovStateChanged"/>
               </Events>
             </Component>
             <Component class="javax.swing.JCheckBox" name="detectCol">
               <Properties>
                 <Property name="text" type="java.lang.String" value="C"/>
               </Properties>
+              <Events>
+                <EventHandler event="stateChanged" listener="javax.swing.event.ChangeListener" parameters="javax.swing.event.ChangeEvent" handler="detectColStateChanged"/>
+              </Events>
             </Component>
             <Component class="javax.swing.JButton" name="hideModeBtn">
               <Properties>

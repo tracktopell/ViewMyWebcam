@@ -1,7 +1,6 @@
 package com.tracktopell.gadget.viewmywebcam;
 
 import java.awt.Color;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.geom.AffineTransform;
@@ -9,7 +8,9 @@ import java.awt.image.BufferedImage;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import javax.imageio.ImageIO;
 
 /**
@@ -18,7 +19,7 @@ import javax.imageio.ImageIO;
  */
 public class SearchColorInImage {
 	
-	public static void main1(String[] args) {
+	public static void main(String[] args) {
 		BufferedImage source  = null;
 		BufferedImage scalled = null;
 		BufferedImage workingImage = null;
@@ -63,16 +64,26 @@ public class SearchColorInImage {
 		
 		Color theTargetColor = new Color(targetColorRGB);
 		String fileFormat =  null;
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd-HHmmss");
 		try {
 			source = ImageIO.read(new FileInputStream(inputFile));
-			
+			if(DEBUG){
+				System.out.println("-> detectColor:"+source.getWidth()+"x"+source.getHeight()+
+						": theTargetColor="+Integer.toHexString(theTargetColor.getRGB())+", outputFile="+outputFile);
+			}
 			BufferedImage imageWithDetection = detectColor(source, theTargetColor);
+			
+			if(DEBUG){
+				System.out.println("-> imageWithDetection:"+imageWithDetection.getWidth()+"x"+imageWithDetection.getHeight());
+			}
+			
 			if(outputFile.toLowerCase().endsWith("png")){
 				fileFormat = "png";
 			} else if(outputFile.toLowerCase().endsWith("jpg") || outputFile.toLowerCase().endsWith("jpeg")){
 				fileFormat = "jpg";
 			}
 			ImageIO.write(imageWithDetection, fileFormat, new FileOutputStream(outputFile));
+			ImageIO.write(imageWithDetection, "png"     , new FileOutputStream(outputFile+"_"+sdf.format(new Date())+".png"));
 		} catch (IOException ioe) {
 			System.err.println("Can't read:" + inputFile);
 			System.exit(3);
@@ -80,7 +91,7 @@ public class SearchColorInImage {
 
 	}
 	
-	public static void main(String[] args) {
+	public static void main2(String[] args) {
 		BufferedImage img1  = null;
 		BufferedImage img2  = null;
 		BufferedImage imgM  = null;
@@ -110,9 +121,8 @@ public class SearchColorInImage {
 		}
 
 	}
-	
-	
-	private static final boolean DEBUG = false;
+		
+	private static final boolean DEBUG = true;
 	
 	public static BufferedImage detectColor(BufferedImage source, Color theTargetColor){
 		BufferedImage workingImage = null;
@@ -148,7 +158,7 @@ public class SearchColorInImage {
 		g2dWorking.drawRect(0, 0, source.getWidth()-1, source.getHeight()-1);
 		g2dWorking.drawImage(source, 0, 0, null);
 
-		//find cyan pixels
+		
 		int c, r, g, b;
 		float[] hsv;
 		
@@ -172,55 +182,39 @@ public class SearchColorInImage {
 		final int MAX_S = 100;
 		final int MAX_B = 100;
 		
+		
+		int  d_H = 20;
 		int tc_H = (int) Math.floor(t_hsv[0] * MAX_H);
 		int tc_S = (int) Math.floor(t_hsv[1] * MAX_S);
 		int tc_B = (int) Math.floor(t_hsv[2] * MAX_B);
 		
-		int min_tc_H;
-		int max_tc_H;
-		
-		int min_tc_S;
-		int max_tc_S;
-		
-		int min_tc_B;
-		int max_tc_B;
-		
-		int range_H =  MAX_H / 2;
-		int range_S = (MAX_S / 6) * 5;
-		int range_B = (MAX_B / 6) * 5;
-		
-		min_tc_H = (tc_H - range_H/2) % MAX_H;
-		if(min_tc_H<0){
-			min_tc_H = 360 + min_tc_H;
-		}		
-		max_tc_H = (tc_H + range_H/2) % MAX_S;
-		
-		min_tc_S = (tc_S - range_S/2);
-		if(min_tc_S<0){
-			min_tc_S = 0;
+		int li_H = 0;
+		int ls_H = 0;
+		int   mh = -1;
+		String  cc="*-|-";
+		if(       ( tc_H - d_H) <= 0){
+			li_H =  360 -( tc_H - d_H);
+			ls_H =       ( tc_H + d_H);
+			cc="*|-|-";
+			mh = -1;
+		} else if(( tc_H + d_H) > 360){
+			li_H =       ( tc_H - d_H);
+			ls_H = -360 +( tc_H + d_H);
+			cc="-|-|*";
+			mh = 1;
+		} else {
+			li_H =       ( tc_H - d_H);
+			ls_H =       ( tc_H + d_H);
+			cc="-|*|-";
+			mh = 0;
 		}
-		max_tc_S = (tc_S + range_S/2);
-		if(max_tc_S > MAX_S){
-			max_tc_S = MAX_S;
-		}
-		
-		min_tc_B = (tc_B - range_B/2);
-		if(min_tc_B<0){
-			min_tc_B = 0;
-		}
-		max_tc_B = (tc_B + range_B/2);
-		if(max_tc_B > MAX_B){
-			max_tc_B = MAX_B;
-		}
-		
-			
 		
 		ArrayList<Point2D> ptsArrayList=new ArrayList<Point2D>();
 		Point2D[] ptsArray;
 		String strDebug = null;
 		
 		if(DEBUG){
-			System.out.println("Target Color: H="+tc_H+" ( "+min_tc_H+","+max_tc_H+" ), S="+tc_S+" ("+min_tc_S+","+max_tc_S+"), B="+tc_B+" ("+min_tc_B+","+max_tc_B+")");
+			System.out.println("Target Color: H="+tc_H+", S="+tc_S+", B="+tc_B+", d_H="+d_H+", [ "+li_H+" , "+ls_H+" ] cc="+cc+", mh="+mh);
 			System.out.println("===>> SCANNING:");
 		}
 	
@@ -233,8 +227,8 @@ public class SearchColorInImage {
 				scX = scX>=scaledW?scaledW-1:scX;
 				scY = scY>=scaledH?scaledH-1:scY;
 				
-				c = scalled.getRGB(scX, scY);				
-
+				c = scalled.getRGB(scX, scY);	
+				
 				r = (c>>16)&0xFF;
 				g = (c>>8)&0xFF;
 				b = c&0xFF;
@@ -246,20 +240,25 @@ public class SearchColorInImage {
 				cS = (int) Math.floor(hsv[1] * 100);
 				cB = (int) Math.floor(hsv[2] * 100);
 				if(DEBUG){
-					strDebug = "\tColor@("+scX+","+scY+")["+scaledW+","+scaledH+"] [" + cH + "," + cS + "," + cB + "] ";
+					strDebug = "\tColor@("+scX+","+scY+")["+scaledW+","+scaledH+"] [" + cH + "," + cS + "," + cB + "] ~ [ "+li_H+" , "+ls_H+" ] cc="+cc+", mh="+mh;
 				}
 				
-				if(		(cH >= min_tc_H || cH<=max_tc_H)&& 
-						(cS >= min_tc_S && cS<=max_tc_S)&&
-						(cB >= min_tc_B && cB<=max_tc_B)){
+				if(	(	(mh==-1&&( (cH >= li_H) || (cH <= ls_H) )) || 
+						(mh== 0&&( (cH <= li_H) && (cH >= ls_H) )) || 
+						(mh== 1&&( (cH >= li_H) || (cH <= ls_H) ))   ) &&
+						(cS <= tc_S+30 )&&(cS >= tc_S-30 )&&
+						(cB <= tc_B+45 )&&(cB >= tc_B-45 )){
 					
 					ptsArrayList.add(new Point2D(x, y));
 					g2dWorking.drawOval(x,y,dx,dy);		
 					hasDetected = true;
 					if(DEBUG){
 						strDebug += "\t [ X ] ";
-						System.out.println(strDebug);
 					}
+				}
+				
+				if(DEBUG){
+					System.out.println(strDebug);
 				}
 				
 			}
@@ -297,11 +296,11 @@ public class SearchColorInImage {
 									(int)p2dLast.x()	+dx/2	,(int)p2dLast.y()	+dy/2);
 			}
 		}
-		if(hasDetected){
-			return workingImage;
-		} else {
-			return source;
+		if(! hasDetected){
+			workingImage=source;
 		}
+		
+		return workingImage;
 	}
 	
 	public static BufferedImage compareImages(BufferedImage image1, BufferedImage image2){
@@ -344,7 +343,8 @@ public class SearchColorInImage {
 		g2dResult .drawImage(image2, 0, 0, null);		
 		
 		g2dResult .drawImage(scalled1, 0, 0, null);	
-		g2dResult .setColor(Color.RED);
+		
+		g2dResult .setColor(Color.CYAN);
 		g2dResult .drawRect (0, 0, scaledW-1,scaledH-1);					
 		
 		g2dResult .drawImage(scalled2, scaledW, 0, null);
@@ -388,8 +388,8 @@ public class SearchColorInImage {
 			Point2D p2dFirst =null;
 			Point2D p2dLast=null;
 			for(Point2D p2d: hull){
-				//g2dResult.setColor(Color.GREEN);
-				//g2dResult.fillOval((int)p2d.x(),(int)p2d.y(),dx/2,dy/2);
+				g2dResult.setColor(Color.BLUE);
+				g2dResult.drawOval((int)p2d.x(),(int)p2d.y(),dx,dy);
 
 				if(p2dBefore!=null){
 					g2dResult.setColor(Color.YELLOW);
@@ -418,6 +418,24 @@ public class SearchColorInImage {
 	}
 	
 	private static boolean looksLikeColor(int c_rgb1,int c_rgb2){
+		boolean e=false;
+		Color c1=new Color(c_rgb1);
+		Color c2=new Color(c_rgb2);
+		
+		float[] hsb_c1 = Color.RGBtoHSB(c1.getRed(), c1.getGreen(), c1.getBlue(), null);
+		float[] hsb_c2 = Color.RGBtoHSB(c2.getRed(), c2.getGreen(), c2.getBlue(), null);
+		
+		if(		Math.abs(hsb_c1[0]-hsb_c2[0]) <= 0.8 && 
+				Math.abs(hsb_c1[1]-hsb_c2[1]) <= 0.8 &&
+				Math.abs(hsb_c1[2]-hsb_c2[2]) <= 0.8) {
+			e = false;
+		}
+		
+		return e;
+	}
+	
+	
+	private static boolean _looksLikeColor(int c_rgb1,int c_rgb2){
 		boolean e=true;
 		
 		byte rgb1[]=new byte[3];
