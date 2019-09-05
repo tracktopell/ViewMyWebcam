@@ -193,7 +193,7 @@ public class SearchColorInImage {
 		int   mh = -1;
 		String  cc="*-|-";
 		if(       ( tc_H - d_H) <= 0){
-			li_H =  360 -( tc_H - d_H);
+			li_H =  360 +( tc_H - d_H);
 			ls_H =       ( tc_H + d_H);
 			cc="*|-|-";
 			mh = -1;
